@@ -93,6 +93,7 @@
     </style>
 </head><body>
     <h1>Sudoku Game</h1>
+    <p id="timer" style="font-size: 18px; color: #333; margin-top: 10px;"></p>
     <div id="sudoku-board"></div>
     <button id="validate-btn">Validate</button>
     <button id="give-up-btn">Give Up</button>
@@ -181,7 +182,7 @@
         // Add event listener for the "Return" button
         returnButton.addEventListener('click', () => {
             level = 1;
-            hintCount = 3; // Reset hint count
+            hintCount = 1; // Reset hint count
             initializeGame();
 
             // Reset button visibility
@@ -293,6 +294,44 @@
             }
         }
 
+        let timerInterval; // To store the timer interval
+
+        // Function to start the timer
+        function startTimer(duration) {
+            let timeRemaining = duration; // Time in seconds (e.g., 5 minutes = 300 seconds)
+            const timerElement = document.getElementById('timer');
+
+            // Update the timer every second
+            timerInterval = setInterval(() => {
+                const minutes = Math.floor(timeRemaining / 60);
+                const seconds = timeRemaining % 60;
+                timerElement.textContent = `Time Remaining: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+
+                if (timeRemaining <= 0) {
+                    clearInterval(timerInterval); // Stop the timer
+                    timerElement.textContent = 'Time Over!';
+                    gameOver(); // Trigger game over state
+                }
+
+                timeRemaining--;
+            }, 1000);
+        }
+
+        // Function to handle game over
+        function gameOver() {
+            // Hide "Give Up" and "Validate" buttons
+            giveUpButton.style.display = 'none';
+            validateButton.style.display = 'none';
+            hintButton.style.display = 'none'; // Hide hint button
+
+            // Show "Show Solution" and "Return" buttons
+            showSolutionButton.style.display = 'inline-block';
+            returnButton.style.display = 'inline-block';
+
+            message.textContent = 'Game Over! Press "Show Solution" to see the solution or "Return" to restart.';
+            message.style.color = 'red';
+        }
+
         // Initialize the game
         function initializeGame() {
             const preFilledCount = 80 - (level * 5);
@@ -300,8 +339,16 @@
             hintButton.textContent = `Hint (${hintCount})`; // Update hint button text
             hintButton.disabled = hintCount === 0; // Disable hint button if no hints left
             message.textContent = `Level ${level}: Fill in the missing numbers!`;
+        
+            // Clear any existing timer and start a new one
+            clearInterval(timerInterval);
+            startTimer(300); // Start a 5-minute timer (300 seconds)
         }
 
+        .
+
+
+        
         // Start the game
         initializeGame();
     </script>
