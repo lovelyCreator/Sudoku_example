@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sudoku Game with Levels</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+        }
+    
+        h1 {
+            margin-top: 20px;
+            color: #333;
+        }
+    
+        #sudoku-board {
+            display: grid;
+            grid-template-columns: repeat(9, 40px);
+            grid-gap: 0; /* Remove gaps to align borders */
+            justify-content: center;
+            margin: 20px auto;
+        }
+    
+        .cell {
+            width: 40px;
+            height: 40px;
+            text-align: center;
+            font-size: 18px;
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    
+        .cell[readonly] {
+            background-color: #ddd;
+            color: #000;
+        }
+    
+        /* Add bold black borders for every 3x3 square */
+        .cell:nth-child(3n+1) {
+            border-left: 2px solid black;
+        }
+    
+        .cell:nth-child(3n) {
+            border-right: 2px solid black;
+        }
+    
+        .cell:nth-child(-n+9) {
+            border-top: 2px solid black;
+        }
+    
+        .cell:nth-last-child(-n+9) {
+            border-bottom: 2px solid black;
+        }
+    
+        /* Add bold black borders for rows */
+        .cell:nth-child(27n+1),
+        .cell:nth-child(27n+2),
+        .cell:nth-child(27n+3),
+        .cell:nth-child(27n+4),
+        .cell:nth-child(27n+5),
+        .cell:nth-child(27n+6),
+        .cell:nth-child(27n+7),
+        .cell:nth-child(27n+8),
+        .cell:nth-child(27n+9) {
+            border-top: 2px solid black;
+        }
+    
+        button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+    
+        button:hover {
+            background-color: #0056b3;
+        }
+    
+        #message {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <h1>Sudoku Game</h1>
+    <div id="sudoku-board"></div>
+    <button id="validate-btn">Validate</button>
+    <p id="message"></p>
+    <script>
+        const board = document.getElementById('sudoku-board');
+        const message = document.getElementById('message');
+        const validateButton = document.getElementById('validate-btn');
+
+        let level = 1;
+        const finalLevel = 8;
+
+        // Generate a Sudoku grid
+        function generateSudoku() {
+            const grid = Array(9).fill(null).map(() => Array(9).fill(0));
+
+            // Check if placing a number is valid
+            function isValid(grid, row, col, num) {
+                for (let i = 0; i < 9; i++) {
+                    if (grid[row][i] === num || grid[i][col] === num) return false;
+                    const boxRow = 3 * Math.floor(row / 3) + Math.floor(i / 3);
+                    const boxCol = 3 * Math.floor(col / 3) + (i % 3);
+                    if (grid[boxRow][boxCol] === num) return false;
+                }
+                return true;
+            }
+
+            // Fill the grid using backtracking
+            function fillGrid(grid) {
+                for (let row = 0; row < 9; row++) {
+                    for (let col = 0; col < 9; col++) {
+                        if (grid[row][col] === 0) {
+                            const numbers = Array.from({ length: 9 }, (_, i) => i + 1).sort(() => Math.random() - 0.5);
+                            for (const num of numbers) {
+                                if (isValid(grid, row, col, num)) {
+                                    grid[row][col] = num;
+                                    if (fillGrid(grid)) return true;
+                                    grid[row][col] = 0;
+                                }
+                            }
+                            return false;
+                        }
+                    }
+                }
+                return true;
+            }
+
+            fillGrid(grid);
+
+            // Flatten the 2D grid into a 1D array
+            return grid.flat();
+        }
+
+        // Render the Sudoku board
+        function renderBoard(preFilledCount) {
+            board.innerHTML = '';
+            const solution = generateSudoku();
+            const filledIndices = new Set();
+
+            // Randomly select cells to pre-fill
+            while (filledIndices.size < preFilledCount) {
+                filledIndices.add(Math.floor(Math.random() * 81));
+            }
+
+            for (let i = 0; i < 81; i++) {
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.maxLength = 1;
+                input.classList.add('cell');
+
+                if (filledIndices.has(i)) {
+                    input.value = solution[i];
+                    input.readOnly = true;
+                } else {
+                    input.addEventListener('input', (e) => {
+                        const value = e.target.value;
+                        if (!/^[1-9]$/.test(value) && value !== '') {
+                            e.target.value = ''; // Clear invalid input
+                        }
+                    });
+                }
+
+                board.appendChild(input);
+            }
+        }
+
+        // Validate the Sudoku grid
+        function validateSudoku() {
+            const cells = document.querySelectorAll('.cell');
+            const grid = Array.from(cells).map(cell => parseInt(cell.value) || '.');
+            const solution = generateSudoku();
+
+            for (let i = 0; i < 81; i++) {
+                if (grid[i] !== solution[i] && grid[i] !== '.') {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // Handle level progression
+        function handleLevelProgression() {
+            if (level < finalLevel) {
+                level++;
+                const preFilledCount = 80 - (level * 5);
+                renderBoard(preFilledCount);
+                message.textContent = `Level ${level}: Fill in the missing numbers!`;
+                message.style.color = 'black';
+            } else {
+                message.textContent = 'You are successful in the game. Congratulations!';
+                message.style.color = 'green';
+                validateButton.disabled = true;
+            }
+        }
+
+        // Initialize the game
+        function initializeGame() {
+            const preFilledCount = 80 - (level * 5);
+            renderBoard(preFilledCount);
+            message.textContent = `Level ${level}: Fill in the missing numbers!`;
+        }
+
+        // Event listener for validation
+        validateButton.addEventListener('click', () => {
+            if (validateSudoku()) {
+                alert('Level completed successfully!');
+                handleLevelProgression();
+            } else {
+                alert('Incorrect solution. Try again!');
+            }
+        });
+
+        // Start the game
+        initializeGame();
+    </script>
+</body>
+</html>
