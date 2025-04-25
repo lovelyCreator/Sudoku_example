@@ -91,12 +91,12 @@
             color: #333;
         }
     </style>
-</head>
-<body>
+</head><body>
     <h1>Sudoku Game</h1>
     <div id="sudoku-board"></div>
     <button id="validate-btn">Validate</button>
     <button id="give-up-btn">Give Up</button>
+    <button id="hint-btn">Hint (1)</button> <!-- New Hint Button -->
     <button id="show-solution-btn" style="display: none;">Show Solution</button>
     <button id="return-btn" style="display: none;">Return</button>
     <p id="message"></p>
@@ -105,6 +105,7 @@
         const message = document.getElementById('message');
         const validateButton = document.getElementById('validate-btn');
         const giveUpButton = document.getElementById('give-up-btn');
+        const hintButton = document.getElementById('hint-btn'); // Hint Button
         const showSolutionButton = document.getElementById('show-solution-btn');
         const returnButton = document.getElementById('return-btn');
 
@@ -112,6 +113,7 @@
         const finalLevel = 8;
         let originalState = []; // To store the original game state
         let currentSolution = []; // To store the solution of the current game
+        let hintCount = 1; // Initial hint count
 
         // Add event listener for the "Validate" button
         validateButton.addEventListener('click', () => {
@@ -127,6 +129,7 @@
             if (isValid) {
                 if (level < finalLevel) {
                     level++;
+                    hintCount = hintCount + 1; // Increase hint count with level
                     message.textContent = `Congratulations! Proceeding to Level ${level}.`;
                     message.style.color = 'green';
                     initializeGame();
@@ -145,6 +148,7 @@
             // Hide "Give Up" and "Validate" buttons
             giveUpButton.style.display = 'none';
             validateButton.style.display = 'none';
+            hintButton.style.display = 'none'; // Hide hint button
 
             // Show "Show Solution" and "Return" buttons
             showSolutionButton.style.display = 'inline-block';
@@ -158,7 +162,15 @@
         showSolutionButton.addEventListener('click', () => {
             const cells = document.querySelectorAll('.cell');
             cells.forEach((cell, index) => {
-                cell.value = currentSolution[index];
+                if (!cell.value) {
+                    // Only fill cells that are empty and do not have a hint
+                    // if (!cell.placeholder) {
+                        cell.value = currentSolution[index];
+                    // }
+                }
+                // Reset color and font weight for all cells
+                cell.style.color = '#000'; // Set color to black
+                cell.style.fontWeight = 'normal'; // Set font weight to normal
                 cell.readOnly = true; // Make all cells read-only
             });
 
@@ -169,6 +181,7 @@
         // Add event listener for the "Return" button
         returnButton.addEventListener('click', () => {
             level = 1;
+            hintCount = 3; // Reset hint count
             initializeGame();
 
             // Reset button visibility
@@ -179,6 +192,29 @@
 
             message.textContent = `Level ${level}: Fill in the missing numbers!`;
             message.style.color = 'black';
+        });
+
+        // Add event listener for the "Hint" button
+        hintButton.addEventListener('click', () => {
+            if (hintCount > 0) {
+                const cells = document.querySelectorAll('.cell');
+                const emptyCells = Array.from(cells).filter((cell, index) => !cell.value && !cell.readOnly);
+
+                if (emptyCells.length > 0) {
+                    const randomCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+                    const index = Array.from(cells).indexOf(randomCell);
+                    randomCell.placeholder = currentSolution[index]; // Show hint as placeholder
+                    randomCell.style.color = '#aaa'; // Light gray color for hint
+                    randomCell.style.fontWeight = 'lighter';
+
+                    hintCount--;
+                    hintButton.textContent = `Hint (${hintCount})`; // Update hint count
+                }
+
+                if (hintCount === 0) {
+                    hintButton.disabled = true; // Disable button when no hints left
+                }
+            }
         });
 
         // Generate a Sudoku grid
@@ -248,6 +284,8 @@
                         if (!/^[1-9]$/.test(value) && value !== '') {
                             e.target.value = ''; // Clear invalid input
                         }
+                        e.target.style.color = '#000'; // Reset color when user types
+                        e.target.style.fontWeight = 'normal'; // Reset font weight
                     });
                 }
 
@@ -259,6 +297,8 @@
         function initializeGame() {
             const preFilledCount = 80 - (level * 5);
             renderBoard(preFilledCount);
+            hintButton.textContent = `Hint (${hintCount})`; // Update hint button text
+            hintButton.disabled = hintCount === 0; // Disable hint button if no hints left
             message.textContent = `Level ${level}: Fill in the missing numbers!`;
         }
 
