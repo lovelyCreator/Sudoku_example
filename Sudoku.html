@@ -96,14 +96,90 @@
     <h1>Sudoku Game</h1>
     <div id="sudoku-board"></div>
     <button id="validate-btn">Validate</button>
+    <button id="give-up-btn">Give Up</button>
+    <button id="show-solution-btn" style="display: none;">Show Solution</button>
+    <button id="return-btn" style="display: none;">Return</button>
     <p id="message"></p>
     <script>
         const board = document.getElementById('sudoku-board');
         const message = document.getElementById('message');
         const validateButton = document.getElementById('validate-btn');
+        const giveUpButton = document.getElementById('give-up-btn');
+        const showSolutionButton = document.getElementById('show-solution-btn');
+        const returnButton = document.getElementById('return-btn');
 
         let level = 1;
         const finalLevel = 8;
+        let originalState = []; // To store the original game state
+        let currentSolution = []; // To store the solution of the current game
+
+        // Add event listener for the "Validate" button
+        validateButton.addEventListener('click', () => {
+            const cells = document.querySelectorAll('.cell');
+            let isValid = true;
+
+            cells.forEach((cell, index) => {
+                if (cell.value != currentSolution[index]) {
+                    isValid = false;
+                }
+            });
+
+            if (isValid) {
+                if (level < finalLevel) {
+                    level++;
+                    message.textContent = `Congratulations! Proceeding to Level ${level}.`;
+                    message.style.color = 'green';
+                    initializeGame();
+                } else {
+                    message.textContent = 'Congratulations! You completed all levels!';
+                    message.style.color = 'gold';
+                }
+            } else {
+                message.textContent = 'Some numbers are incorrect. Keep trying!';
+                message.style.color = 'red';
+            }
+        });
+
+        // Add event listener for the "Give Up" button
+        giveUpButton.addEventListener('click', () => {
+            // Hide "Give Up" and "Validate" buttons
+            giveUpButton.style.display = 'none';
+            validateButton.style.display = 'none';
+
+            // Show "Show Solution" and "Return" buttons
+            showSolutionButton.style.display = 'inline-block';
+            returnButton.style.display = 'inline-block';
+
+            message.textContent = 'You gave up! Press "Show Solution" to see the solution or "Return" to restart.';
+            message.style.color = 'blue';
+        });
+
+        // Add event listener for the "Show Solution" button
+        showSolutionButton.addEventListener('click', () => {
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach((cell, index) => {
+                cell.value = currentSolution[index];
+                cell.readOnly = true; // Make all cells read-only
+            });
+
+            message.textContent = 'Solution displayed!';
+            message.style.color = 'blue';
+        });
+
+        // Add event listener for the "Return" button
+        returnButton.addEventListener('click', () => {
+            level = 1;
+            initializeGame();
+
+            // Reset button visibility
+            giveUpButton.style.display = 'inline-block';
+            validateButton.style.display = 'inline-block';
+            showSolutionButton.style.display = 'none';
+            returnButton.style.display = 'none';
+
+            message.textContent = `Level ${level}: Fill in the missing numbers!`;
+            message.style.color = 'black';
+        });
 
         // Generate a Sudoku grid
         function generateSudoku() {
@@ -149,7 +225,7 @@
         // Render the Sudoku board
         function renderBoard(preFilledCount) {
             board.innerHTML = '';
-            const solution = generateSudoku();
+            currentSolution = generateSudoku(); // Generate and save the solution
             const filledIndices = new Set();
 
             // Randomly select cells to pre-fill
@@ -164,7 +240,7 @@
                 input.classList.add('cell');
 
                 if (filledIndices.has(i)) {
-                    input.value = solution[i];
+                    input.value = currentSolution[i];
                     input.readOnly = true;
                 } else {
                     input.addEventListener('input', (e) => {
@@ -179,51 +255,12 @@
             }
         }
 
-        // Validate the Sudoku grid
-        function validateSudoku() {
-            const cells = document.querySelectorAll('.cell');
-            const grid = Array.from(cells).map(cell => parseInt(cell.value) || '.');
-            const solution = generateSudoku();
-
-            for (let i = 0; i < 81; i++) {
-                if (grid[i] !== solution[i] && grid[i] !== '.') {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        // Handle level progression
-        function handleLevelProgression() {
-            if (level < finalLevel) {
-                level++;
-                const preFilledCount = 80 - (level * 5);
-                renderBoard(preFilledCount);
-                message.textContent = `Level ${level}: Fill in the missing numbers!`;
-                message.style.color = 'black';
-            } else {
-                message.textContent = 'You are successful in the game. Congratulations!';
-                message.style.color = 'green';
-                validateButton.disabled = true;
-            }
-        }
-
         // Initialize the game
         function initializeGame() {
             const preFilledCount = 80 - (level * 5);
             renderBoard(preFilledCount);
             message.textContent = `Level ${level}: Fill in the missing numbers!`;
         }
-
-        // Event listener for validation
-        validateButton.addEventListener('click', () => {
-            if (validateSudoku()) {
-                alert('Level completed successfully!');
-                handleLevelProgression();
-            } else {
-                alert('Incorrect solution. Try again!');
-            }
-        });
 
         // Start the game
         initializeGame();
